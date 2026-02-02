@@ -62,7 +62,8 @@ export const transformSync = (
 		)
 	) {
 		define['import.meta.url'] = JSON.stringify(url);
-		define["import.meta.dirname"] = JSON.stringify(path.dirname(filePath));
+		define['import.meta.filename'] = JSON.stringify(filePath);
+		define['import.meta.dirname'] = JSON.stringify(path.dirname(filePath));
 	}
 
 	const esbuildOptions = {
@@ -115,13 +116,33 @@ export const transformSync = (
 // Used by esm-loader
 export const transform = async (
 	code: string,
-	filePath: string,
+	filePathOrUrl: string,
 	extendOptions?: TransformOptions,
 ): Promise<Transformed> => {
+	const define: { [key: string]: string } = {};
+
+	let filePath: string;
+	if (filePathOrUrl.startsWith('file://')) {
+		filePath = fileURLToPath(filePathOrUrl);
+	} else {
+		[filePath] = filePathOrUrl.split('?');
+	}
+
+	if (
+		!(
+			filePath.endsWith('.cjs')
+			|| filePath.endsWith('.cts')
+		)
+	) {
+		define['import.meta.filename'] = JSON.stringify(filePath);
+		define['import.meta.dirname'] = JSON.stringify(path.dirname(filePath));
+	}
+
 	const esbuildOptions = {
 		...cacheConfig,
 		format: 'esm',
 		sourcefile: filePath,
+		define,
 		...extendOptions,
 	} as const;
 

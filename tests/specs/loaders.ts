@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import type { NodeApis } from '../utils/tsx.js';
@@ -22,6 +23,7 @@ export default testSuite(({ describe }, node: NodeApis) => {
 				'dirname-test.mts': `
 				console.log(JSON.stringify({
 					url: import.meta.url,
+					filename: import.meta.filename,
 					dirname: import.meta.dirname
 				}));
 				`,
@@ -55,11 +57,12 @@ export default testSuite(({ describe }, node: NodeApis) => {
 				expect(tsxResult.exitCode).toBe(0);
 			});
 
-			test('import.meta.dirname', async () => {
+			test('import.meta.dirname / filename', async () => {
 				const tsxResult = await node.hook(['./dirname-test.mts'], fixture.path);
 
-				const { url, dirname } = JSON.parse(tsxResult.stdout);
+				const { url, filename, dirname } = JSON.parse(tsxResult.stdout);
 				expect(url.endsWith('/dirname-test.mts')).toBeTruthy();
+				expect(filename).toBe(path.join(fixture.path, 'dirname-test.mts'));
 				expect(dirname).toBe(fixture.path.replace(/\/$/, ''));
 
 				if (node.supports.moduleRegister) {
